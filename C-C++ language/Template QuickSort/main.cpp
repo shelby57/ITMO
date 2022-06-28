@@ -1,9 +1,8 @@
-#include "return_codes.h"
-
 #include "Float.h"
-#include "Int.h"
 #include "phonebook.h"
 #include "quicksort.h"
+#include "return_codes.h"
+
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -25,7 +24,7 @@ void processing_error(int code)
 }
 
 template< typename T >
-void go(std::vector< T > &a, std::ostream &fout, bool type)
+void go(std::vector< T > &a, std::ofstream &fout, bool type)
 {
     if (type)
         quicksort< T, true >(a, 0, a.size() - 1);
@@ -36,11 +35,10 @@ void go(std::vector< T > &a, std::ostream &fout, bool type)
 }
 
 template< typename T >
-void read(std::vector< T > &a, std::istream &fin, std::string &count_line)
+void read(std::vector< T > &a, std::ifstream &fin, int count_line)
 {
     T s;
-    std::size_t cnt = std::stoi(count_line);
-    for (int i = 0; i < cnt; ++i)
+    for (int i = 0; i < count_line; ++i)
     {
         fin >> s;
         a.emplace_back(s);
@@ -63,7 +61,8 @@ int main(int argc, char *argv[])
         return ERROR_FILE_NOT_FOUND;
     }
 
-    std::string type_sort, type_data, count_line;
+    std::string type_sort, type_data;
+    int count_line;
     std::getline(fin, type_data);
     if ((type_data != "int" && type_data != "float" && type_data != "phonebook"))
     {
@@ -80,17 +79,11 @@ int main(int argc, char *argv[])
         return ERROR_INVALID_DATA;
     }
 
-    std::getline(fin, count_line);
-    if (!is_number_int(count_line))
-    {
-        processing_error(6);
-        fin.close();
-        return ERROR_INVALID_DATA;
-    }
+    fin >> count_line;
 
-    std::ofstream fout;
-    fout.open(argv[2]);
-    if (!fout.is_open())
+    std::ofstream f_out;
+    f_out.open(argv[2]);
+    if (!f_out.is_open())
     {
         fin.close();
         processing_error(2);
@@ -102,23 +95,52 @@ int main(int argc, char *argv[])
     if (type_data == "int")
     {
         std::vector< int > a;
-        read< int >(a, fin, count_line);
-        fin.close();
-        go< int >(a, fout, type);
+        try
+        {
+            a.reserve(count_line);
+            read< int >(a, fin, count_line);
+            go< int >(a, f_out, type);
+        } catch (std::bad_alloc &e)
+        {
+            processing_error(3);
+        } catch (std::length_error &e)
+        {
+            processing_error(3);
+        }
     }
     else if (type_data == "float")
     {
-        std::vector< float > a;
-        read< float >(a, fin, count_line);
-        fin.close();
-        go< float >(a, fout, type);
+        try
+        {
+            std::vector< float > a;
+            a.reserve(count_line);
+            read< float >(a, fin, count_line);
+            go< float >(a, f_out, type);
+        } catch (std::bad_alloc &e)
+        {
+            processing_error(3);
+        } catch (std::length_error &e)
+        {
+            processing_error(3);
+        }
     }
     else
     {
-        std::vector< phonebook > a;
-        read< phonebook >(a, fin, count_line);
-        fin.close();
-        go< phonebook >(a, fout, type);
+        try
+        {
+            std::vector< phonebook > a;
+            a.reserve(count_line);
+            read< phonebook >(a, fin, count_line);
+            go< phonebook >(a, f_out, type);
+        } catch (std::bad_alloc &e)
+        {
+            processing_error(3);
+        } catch (std::length_error &e)
+        {
+            processing_error(3);
+        }
     }
+    fin.close();
+    f_out.close();
     return ERROR_SUCCESS;
 }
